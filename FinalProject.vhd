@@ -2,106 +2,89 @@ LIBRARY IEEE;
 USE  IEEE.STD_LOGIC_1164.all;
 USE  IEEE.STD_LOGIC_ARITH.all;
 USE  IEEE.STD_LOGIC_UNSIGNED.all;
+USE  IEEE.NUMERIC_STD.all;
 
 -- Creating a peripheral to implement the log base 2 operation on the SCOMP
 -- This peripheral provides hardware acceleration for log2 calculations
 -- Uses I/O addresses in the range 0x90-0x9F
-entity FinalProject IS
+entity Log2Peripheral IS
 	Port (
 		clock, reset : in std_logic;
 		IO_ADDR : in std_logic_vector(10 DOWNTO 0);
 		IO_DATA : inout std_logic_vector(15 DOWNTO 0);
 		IO_READ : in std_logic;
-		IO_WRITE: in std_logic;
-		CS : out std_logic  -- Chip select signal
+		IO_WRITE: in std_logic
 	);
-end FinalProject;
+end Log2Peripheral;
 
-architecture behavior of FinalProject is
+architecture behavior of Log2Peripheral is
 	-- Internal registers
-	signal input_value : std_logic_vector(15 downto 0);  -- Input value for log2
-	signal log2_result : std_logic_vector(15 downto 0);  -- Calculated log2 result
-	
-	-- Address decoding signals
-	signal addr_match_90 : std_logic;  -- Address 0x90 (input/result register)
-	
-	-- Chip select signal
-	signal peripheral_cs : std_logic;
+	signal LOG_WRITE : unsigned(15 downto 0);
+	signal LOG_READ : unsigned(15 downto 0);
 	
 begin
-	-- Address decoding: Check if address is in range 0x90-0x9F
-	-- 0x90 in binary (11-bit): 010 0100 0000
-	-- We check if the upper bits match 0x90-0x9F range
-	peripheral_cs <= '1' when (IO_ADDR(10 downto 4) = "0100100") else '0';
-	CS <= peripheral_cs;
-	
-	-- Specific address decoding
-	addr_match_90 <= '1' when (peripheral_cs = '1' and IO_ADDR(3 downto 0) = "0000") else '0';
-	
-	-- Write process: Handle writes to the peripheral
+	-- Write process, storing the input 
 	process(clock, reset)
 	begin
+		-- reset on High
 		if reset = '1' then
-			input_value <= (others => '0');
+			LOG_WRITE <= (others => '0');
 		elsif rising_edge(clock) then
-			if IO_WRITE = '1' and addr_match_90 = '1' then
-				-- Write to address 0x90: Store input value
-				input_value <= IO_DATA;
+			-- write to LOG_WRITE register
+			if IO_WRITE = '1' and IO_ADDR = x"90" then
+				LOG_WRITE <= unsigned(IO_DATA);
 			end if;
 		end if;
 	end process;
-	
-	-- Log2 calculation (combinational logic)
-	-- This implements floor(log2(x)) by finding the position of the MSB
-	process(input_value)
+
+	-- This implements floor(log2(x)) by finding the position of the MSB using a priority encoder
+	process(LOG_WRITE)
 	begin
 		-- Default case (for input = 0, which is undefined)
-		log2_result <= (others => '0');
+		LOG_READ <= (others => '0');
 		
 		-- Priority encoder to find the most significant bit position
-		if input_value(15) = '1' then
-			log2_result <= x"000F";  -- log2 is 15
-		elsif input_value(14) = '1' then
-			log2_result <= x"000E";  -- log2 is 14
-		elsif input_value(13) = '1' then
-			log2_result <= x"000D";  -- log2 is 13
-		elsif input_value(12) = '1' then
-			log2_result <= x"000C";  -- log2 is 12
-		elsif input_value(11) = '1' then
-			log2_result <= x"000B";  -- log2 is 11
-		elsif input_value(10) = '1' then
-			log2_result <= x"000A";  -- log2 is 10
-		elsif input_value(9) = '1' then
-			log2_result <= x"0009";  -- log2 is 9
-		elsif input_value(8) = '1' then
-			log2_result <= x"0008";  -- log2 is 8
-		elsif input_value(7) = '1' then
-			log2_result <= x"0007";  -- log2 is 7
-		elsif input_value(6) = '1' then
-			log2_result <= x"0006";  -- log2 is 6
-		elsif input_value(5) = '1' then
-			log2_result <= x"0005";  -- log2 is 5
-		elsif input_value(4) = '1' then
-			log2_result <= x"0004";  -- log2 is 4
-		elsif input_value(3) = '1' then
-			log2_result <= x"0003";  -- log2 is 3
-		elsif input_value(2) = '1' then
-			log2_result <= x"0002";  -- log2 is 2
-		elsif input_value(1) = '1' then
-			log2_result <= x"0001";  -- log2 is 1
-		elsif input_value(0) = '1' then
-			log2_result <= x"0000";  -- log2 is 0 (for input = 1)
+		if LOG_WRITE(15) = '1' then
+			LOG_READ <= to_unsigned(15, 16);  -- log2 is 15
+		elsif LOG_WRITE(14) = '1' then
+			LOG_READ <= to_unsigned(14, 16);  -- log2 is 14
+		elsif LOG_WRITE(13) = '1' then
+			LOG_READ <= to_unsigned(13, 16);  -- log2 is 13
+		elsif LOG_WRITE(12) = '1' then
+			LOG_READ <= to_unsigned(12, 16);  -- log2 is 12
+		elsif LOG_WRITE(11) = '1' then
+			LOG_READ <= to_unsigned(11, 16);  -- log2 is 11
+		elsif LOG_WRITE(10) = '1' then
+			LOG_READ <= to_unsigned(10, 16);  -- log2 is 10
+		elsif LOG_WRITE(9) = '1' then
+			LOG_READ <= to_unsigned(9, 16);  -- log2 is 9
+		elsif LOG_WRITE(8) = '1' then
+			LOG_READ <= to_unsigned(8, 16);  -- log2 is 8
+		elsif LOG_WRITE(7) = '1' then
+			LOG_READ <= to_unsigned(7, 16);  -- log2 is 7
+		elsif LOG_WRITE(6) = '1' then
+			LOG_READ <= to_unsigned(6, 16);  -- log2 is 6
+		elsif LOG_WRITE(5) = '1' then
+			LOG_READ <= to_unsigned(5, 16);  -- log2 is 5
+		elsif LOG_WRITE(4) = '1' then
+			LOG_READ <= to_unsigned(4, 16);  -- log2 is 4
+		elsif LOG_WRITE(3) = '1' then
+			LOG_READ <= to_unsigned(3, 16);  -- log2 is 3
+		elsif LOG_WRITE(2) = '1' then
+			LOG_READ <= to_unsigned(2, 16);  -- log2 is 2
+		elsif LOG_WRITE(1) = '1' then
+			LOG_READ <= to_unsigned(1, 16);  -- log2 is 1
 		else
-			log2_result <= x"FFFF";  -- Error: input is 0
+			LOG_READ <= to_unsigned(0, 16);  -- log2 is 0
 		end if;
 	end process;
 	
 	-- Read process: Handle reads from the peripheral
-	process(IO_READ, addr_match_90, log2_result)
+	process(IO_READ, IO_ADDR, LOG_READ)
 	begin
-		if IO_READ = '1' and addr_match_90 = '1' then
-			-- Read from address 0x90: Return log2 result
-			IO_DATA <= log2_result;
+		if IO_READ = '1' and IO_ADDR = x"91" then
+			-- Read from address 0x91: Return log2 result
+			IO_DATA <= std_logic_vector(LOG_READ);
 		else
 			IO_DATA <= (others => 'Z');  -- High impedance when not reading
 		end if;

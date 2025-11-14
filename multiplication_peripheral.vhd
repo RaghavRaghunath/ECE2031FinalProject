@@ -19,7 +19,7 @@ end MultiplicationPeripheral;
 architecture Behavioral of MultiplicationPeripheral is
     signal A : std_logic_vector(15 DOWNTO 0); -- first input
     signal B : std_logic_vector(15 DOWNTO 0); -- second input
-    signal product : std_logic_vector(31 DOWNTO 0); -- product of A and B
+    signal product : std_logic_vector(15 DOWNTO 0); -- product of A and B
 
 begin
 
@@ -32,19 +32,19 @@ begin
             product <= (others => '0');
         elsif rising_edge(clock) then
             -- write to A (which is stored in address 0x80)
-            if (IO_WRITE = '1' and IO_ADDR = x"80") then
+            if (IO_WRITE = '1' and IO_ADDR = "10000000") then
                 A <= unsigned(IO_DATA);
             end if;
 
             -- write to B (which is stored in address 0x81) and calculate the product 
-            if (IO_WRITE = '1' and IO_ADDR = x"81") then
+            if (IO_WRITE = '1' and IO_ADDR = "10000001") then
                 B <= unsigned(IO_DATA);
                 product <= A * B;
             end if;
 
             -- read the product (store in address 0x82)
-            if (IO_READ = '1' and IO_ADDR = x"82) then
-                IO_DATA <= product(31 DOWNTO 16)
+            if (IO_READ = '1' and IO_ADDR = "10000010") then
+                IO_DATA <= product(15 DOWNTO 0)
             end if;
         end if;
     end process;
